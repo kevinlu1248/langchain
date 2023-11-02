@@ -138,7 +138,11 @@ def add(
     typer.echo(install_str)
 
     if typer.confirm("Run it?"):
-        subprocess.run(cmd, cwd=cwd)
+        try:
+            subprocess.run(cmd, cwd=cwd, check=True)
+        except subprocess.CalledProcessError as e:
+            typer.echo(f"Installation failed with error: {str(e)}")
+            return
 
     if typer.confirm("\nGenerate route code for these packages?", default=True):
         chain_names = []
@@ -228,4 +232,8 @@ def serve(
     host_str = host if host is not None else "127.0.0.1"
 
     cmd = ["uvicorn", app_str, "--reload", "--port", port_str, "--host", host_str]
-    subprocess.run(cmd)
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        typer.echo(f"Server failed to start with error: {str(e)}")
+        return
