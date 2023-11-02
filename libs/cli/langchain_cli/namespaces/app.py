@@ -139,7 +139,7 @@ def add(
 
     if typer.confirm("Run it?"):
         try:
-            subprocess.run(cmd, cwd=cwd, check=True)
+            subprocess.check_call(cmd, cwd=cwd)
         except subprocess.CalledProcessError as e:
             typer.echo(f"Installation failed with error: {str(e)}")
             return
@@ -233,7 +233,7 @@ def serve(
 
     cmd = ["uvicorn", app_str, "--reload", "--port", port_str, "--host", host_str]
     try:
-        subprocess.run(cmd, check=True)
+        subprocess.check_call(cmd)
     except subprocess.CalledProcessError as e:
         typer.echo(f"Server failed to start with error: {str(e)}")
         return
