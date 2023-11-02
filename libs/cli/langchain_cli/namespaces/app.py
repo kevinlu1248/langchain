@@ -78,15 +78,7 @@ def add(
     langchain app add git+ssh://git@github.com/efriis/simple-pirate.git
     """
 
-    parsed_deps = parse_dependencies(dependencies, repo, branch, api_path)
-
-    project_root = get_package_root(project_dir)
-
-    package_dir = project_root / "packages"
-
-    create_events(
-        [{"event": "serve add", "properties": dict(parsed_dep=d)} for d in parsed_deps]
-    )
+    parsed_deps, package_dir = parse_deps_and_create_events(dependencies, repo, branch, api_path, project_dir)
 
     # group by repo/ref
     grouped: Dict[Tuple[str, Optional[str]], List[DependencySource]] = {}
@@ -181,6 +173,18 @@ def add(
             + ["```"]
         )
         typer.echo("\n".join(lines))
+
+def parse_deps_and_create_events(dependencies, repo, branch, api_path, project_dir):
+    parsed_deps = parse_dependencies(dependencies, repo, branch, api_path)
+
+    project_root = get_package_root(project_dir)
+
+    package_dir = project_root / "packages"
+
+    create_events(
+        [{"event": "serve add", "properties": dict(parsed_dep=d)} for d in parsed_deps]
+    )
+    return parsed_deps, package_dir
 
 
 @app_cli.command()
