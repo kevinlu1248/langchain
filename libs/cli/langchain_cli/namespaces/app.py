@@ -71,6 +71,22 @@ def add(
     ] = [],
 ):
     """
+# Test for parse_dependencies function
+def test_parse_dependencies():
+    dependencies = ["dep1", "dep2"]
+    repo = ["repo1", "repo2"]
+    branch = ["branch1", "branch2"]
+    api_path = ["api_path1", "api_path2"]
+
+    parsed_deps = parse_dependencies(dependencies, repo, branch, api_path)
+
+    assert len(parsed_deps) == 2
+    assert parsed_deps[0]["git"] == "dep1"
+    assert parsed_deps[0]["ref"] == "branch1"
+    assert parsed_deps[0]["subdirectory"] == "api_path1"
+    assert parsed_deps[1]["git"] == "dep2"
+    assert parsed_deps[1]["ref"] == "branch2"
+    assert parsed_deps[1]["subdirectory"] == "api_path2"
     Adds the specified template to the current LangServe app.
 
     e.g.:
@@ -123,6 +139,56 @@ def add(
 
             destination_path = package_dir / inner_api_path
             if destination_path.exists():
+# Test for install_packages function
+def test_install_packages():
+    grouped = {
+        ("git1", "ref1"): [{"subdirectory": "sub1"}],
+        ("git2", "ref2"): [{"subdirectory": "sub2"}],
+    }
+
+    installed_destination_paths, installed_exports = install_packages(grouped)
+
+    assert len(installed_destination_paths) == 2
+    assert len(installed_exports) == 2
+    assert installed_destination_paths[0].exists()
+    assert installed_destination_paths[1].exists()
+    assert installed_exports[0]["package_name"] == "sub1"
+    assert installed_exports[1]["package_name"] == "sub2"
+# Test for group_dependencies function
+def test_group_dependencies():
+    parsed_deps = [
+        {"git": "git1", "ref": "ref1"},
+        {"git": "git1", "ref": "ref1"},
+        {"git": "git2", "ref": "ref2"},
+    ]
+
+    grouped = group_dependencies(parsed_deps)
+
+    assert len(grouped) == 2
+    assert len(grouped[("git1", "ref1")]) == 2
+    assert len(grouped[("git2", "ref2")]) == 1
+            typer.echo(f"Adding {git}@{ref}...")
+        else:
+            typer.echo(f"Adding {len(group_deps)} templates from {git}@{ref}")
+        source_repo_path = update_repo(git, ref, REPO_DIR)
+
+        for dep in group_deps:
+            source_path = (
+                source_repo_path / dep["subdirectory"]
+                if dep["subdirectory"]
+                else source_repo_path
+            )
+            pyproject_path = source_path / "pyproject.toml"
+            if not pyproject_path.exists():
+                typer.echo(f"Could not find {pyproject_path}")
+                continue
+            langserve_export = get_langserve_export(pyproject_path)
+
+            # default path to package_name
+            inner_api_path = dep["api_path"] or langserve_export["package_name"]
+
+            destination_path = package_dir / inner_api_path
+            if destination_path.exists():
                 typer.echo(
                     f"Folder {str(inner_api_path)} already exists. " "Skipping...",
                 )
@@ -131,6 +197,22 @@ def add(
             typer.echo(f" - Downloaded {dep['subdirectory']} to {inner_api_path}")
             installed_destination_paths.append(destination_path)
             installed_exports.append(langserve_export)
+            # Test for generate_route_code function
+            def test_generate_route_code():
+            installed_exports = [
+            {"package_name": "sub1", "module": "module1", "attr": "attr1"},
+            {"package_name": "sub2", "module": "module2", "attr": "attr2"},
+            ]
+            installed_destination_paths = [Path("packages/sub1"), Path("packages/sub2")]
+            
+            imports, routes = generate_route_code(installed_exports, installed_destination_paths)
+            
+            assert len(imports) == 2
+            assert len(routes) == 2
+            assert imports[0] == "from module1 import attr1 as sub1_chain"
+            assert imports[1] == "from module2 import attr2 as sub2_chain"
+            assert routes[0] == 'add_routes(app, sub1_chain, path="/sub1")'
+            assert routes[1] == 'add_routes(app, sub2_chain, path="/sub2")'
 
     if len(installed_destination_paths) == 0:
         typer.echo("No packages installed. Exiting.")
